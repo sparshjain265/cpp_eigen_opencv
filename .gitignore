@@ -1,0 +1,8 @@
+build/
+!.gitkeep
+*.o
+*.swp
+*.tmp
+compile_commands.json
+.vscode/
+.cache/
