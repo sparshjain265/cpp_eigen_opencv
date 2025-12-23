@@ -8,12 +8,15 @@
 #include <opencv2/opencv.hpp>
 #include <Eigen/Dense>
 #include <iostream>
+#include <cpp_eigen_opencv/shared/ndarray.hpp>
 
 int main()
 {
     auto m = Eigen::Matrix3f::Identity();
     std::cout << "Eigen matrix:\n"
               << m << std::endl;
+
+    ND::test();
 
     auto img = cv::Mat::zeros(200, 200, CV_8UC3);
     cv::imshow("Test", img);
