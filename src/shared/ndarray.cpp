@@ -8,6 +8,7 @@
 #include <cpp_eigen_opencv/shared/ndarray.hpp>
 
 #include <iostream>
+#include <array>
 
 namespace ND
 {
@@ -33,6 +34,21 @@ namespace ND
             // Uncommenting the following line should result in a compile-time error
             // array(0, 0) = 100;
 
+            std::cout << "Array(0, 0): " << array(0, 0) << std::endl;
+        }
+
+        {
+            // Non-Owning NDArray
+            int data[12] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+            NDArray<int, 2> array(data, {3, 4});
+            array(0, 0) = 100;
+            std::cout << "Array(0, 0): " << array(0, 0) << std::endl;
+        }
+
+        {
+            // Owning NDArray
+            auto array = NDArray<int, 2>::Zeros({3, 4});
+            array(0, 0) = 100;
             std::cout << "Array(0, 0): " << array(0, 0) << std::endl;
         }
     }
