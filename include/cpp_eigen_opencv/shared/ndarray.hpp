@@ -74,7 +74,7 @@ namespace ND
         }
 
         // Protected Owning Constructor
-        explicit NDArray(std::shared_ptr<T> owned_data, Shape<NDim> shape)
+        explicit NDArray(std::shared_ptr<T[]> owned_data, Shape<NDim> shape)
             : NDArray(owned_data.get(), shape)
         {
             m_owned_data = owned_data;
@@ -121,7 +121,7 @@ namespace ND
             auto owned_data = std::make_shared<T[]>(std::reduce(
                 shape.begin(),
                 shape.end(),
-                1,
+                static_cast<size_type>(1),
                 std::multiplies<size_type>{}));
 
             return NDArray<T, NDim>(owned_data, shape);
@@ -223,6 +223,11 @@ namespace ND
             auto arr = Empty(m_shape);
             std::copy(m_data, m_data + m_size, arr.m_data);
             return arr;
+        }
+
+        static NDArray<T, NDim> Copy(const NDArray<T, NDim> &other)
+        {
+            return other.Copy();
         }
     };
 
