@@ -10,8 +10,6 @@
 
 #include <array>
 #include <memory>
-#include <initializer_list>
-#include <type_traits>
 #include <algorithm>
 #include <cassert>
 #include <concepts>
