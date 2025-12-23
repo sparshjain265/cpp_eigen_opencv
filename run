@@ -1,0 +1,32 @@
+#!/usr/bin/bash
+# run: make and run the specified build
+
+set -e  # exit on error
+
+# Choose build type: debug, asan, release
+BUILD_TYPE=${1:-rel}  # default to debug if not specified
+
+# Map BUILD_TYPE to actual directory
+case "$BUILD_TYPE" in
+    dbg)
+        BUILD_DIR="build/debug"
+        ;;
+    asan)
+        BUILD_DIR="build/asan"
+        ;;
+    rel)
+        BUILD_DIR="build/release"
+        ;;
+    *)
+        echo "Unknown build type: $BUILD_TYPE"
+        exit 1
+        ;;
+esac
+
+TARGET="${BUILD_DIR}/cpp_eigen_opencv"
+
+# Make
+make ${BUILD_TYPE}
+
+# Run executable
+"$TARGET" "${@:2}"  # pass remaining arguments
