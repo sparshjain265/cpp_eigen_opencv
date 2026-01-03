@@ -5,10 +5,10 @@
  *
  */
 
-#include <cpp_eigen_opencv/shared/ndarray.hpp>
-
 #include <iostream>
 #include <array>
+
+#include <cpp_eigen_opencv/shared/ndarray.hpp>
 
 namespace ND
 {

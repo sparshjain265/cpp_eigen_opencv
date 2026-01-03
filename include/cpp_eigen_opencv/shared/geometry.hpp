@@ -8,12 +8,13 @@
 #ifndef INCLUDE_CPP_EIGEN_OPENCV_SHARED_GEOMETRY_HPP
 #define INCLUDE_CPP_EIGEN_OPENCV_SHARED_GEOMETRY_HPP
 
-#include <cpp_eigen_opencv/shared/ndarray.hpp>
 #include <type_traits>
 #include <numbers>
 #include <array>
 #include <vector>
 #include <cmath>
+#include <cpp_eigen_opencv/shared/ndarray.hpp>
+#include <cpp_eigen_opencv/shared/debug.hpp>
 
 #ifdef DEBUG
 #include <iostream>
@@ -51,7 +52,7 @@ namespace Geometry
         assert(b.size() == static_cast<size_type>(2) &&
                "cross product defined for 2D vectors only");
 
-        static bool nonFloatWarningShown = false;
+        DEBUG_ONLY static bool nonFloatWarningShown = false;
         if constexpr (!std::is_floating_point_v<T>)
         {
 #ifdef DEBUG
@@ -276,8 +277,11 @@ namespace Geometry
 
     /**************************************************************************/
 
-    void testConvexHull(NDArray<double, 2> points);
-    void testMinAreaRectangle(NDArray<double, 2> points);
+    void testConvexHullInvariants(const NDArray<double, 2> &points);
+    void testMinAreaRectangleInvariants(const NDArray<double, 2> &points);
+
+    void testConvexHull();
+    void testMinAreaRectangle();
 
 } // namespace Geometry
 

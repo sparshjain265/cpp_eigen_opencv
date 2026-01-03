@@ -5,12 +5,16 @@
  *
  */
 
+#include <iostream>
+#include <random>
+
 #include <cpp_eigen_opencv/shared/ndarray.hpp>
 #include <cpp_eigen_opencv/shared/geometry.hpp>
+#include <cpp_eigen_opencv/shared/debug.hpp>
 
 namespace Geometry
 {
-    void testConvexHull(
+    void testConvexHullInvariants(
         const NDArray<double, 2> &points)
     {
         const auto N = points.shape()[0];
@@ -29,7 +33,7 @@ namespace Geometry
         // Hull Points are a subset of input points
         for (size_type i = 0; i < n; ++i)
         {
-            bool found = false;
+            DEBUG_ONLY bool found = false;
             for (size_type j = 0; j < N; ++j)
             {
                 if ((equal(hull(i, 0), points(j, 0))) &&
@@ -53,7 +57,7 @@ namespace Geometry
             const auto v1 = p1 - p0;
             const auto v2 = p2 - p1;
 
-            const auto crossProduct = cross(v1, v2);
+            DEBUG_ONLY const auto crossProduct = cross(v1, v2);
             assert(crossProduct >= -eps && "Hull points not in counter-clockwise order");
         }
 
@@ -61,7 +65,7 @@ namespace Geometry
         for (size_type i = 0; i < N; ++i)
         {
             const auto p = NDArray<const double, 1>(&points(i, 0), {2});
-            bool inside = true;
+            DEBUG_ONLY bool inside = true;
             for (size_type j = 0; j < n; ++j)
             {
                 const auto p0 = NDArray<const double, 1>(&hull(j, 0), {2});
@@ -79,7 +83,7 @@ namespace Geometry
         }
     }
 
-    void testMinAreaRectangle(
+    void testMinAreaRectangleInvariants(
         const NDArray<double, 2> &points)
     {
         const auto rectangle = minAreaRectangle(points);
@@ -100,17 +104,63 @@ namespace Geometry
             const auto translated = p - rectangle.center;
 
             // Rotate point by -angle
-            const double xRotated = ND::dot(translated, u);
-            const double yRotated = ND::dot(translated, v);
+            DEBUG_ONLY const double xRotated = ND::dot(translated, u);
+            DEBUG_ONLY const double yRotated = ND::dot(translated, v);
 
             // Check if point lies within rectangle bounds
-            const double halfWidth = rectangle.size[0] * 0.5;
-            const double halfHeight = rectangle.size[1] * 0.5;
+            DEBUG_ONLY const double halfWidth = rectangle.size[0] * 0.5;
+            DEBUG_ONLY const double halfHeight = rectangle.size[1] * 0.5;
 
-            constexpr double eps = 1e-6;
+            DEBUG_ONLY constexpr double eps = 1e-6;
             assert((std::abs(xRotated) <= halfWidth + eps) &&
                    (std::abs(yRotated) <= halfHeight + eps) &&
                    "Point lies outside the minimum area rectangle");
+        }
+    }
+
+    void testConvexHull()
+    {
+        std::cout << "Running tests for computeConvexHull..." << std::endl;
+
+        // Generate random points and test computeConvexHull invariants
+        std::mt19937 rng(42); // Fixed seed for reproducibility
+        std::uniform_real_distribution<double> dist(-1000.0, 1000.0);
+
+        for (int iter = 0; iter < 1000; ++iter)
+        {
+            const size_type numPoints = rng() % 1000 + 1;
+            auto points = NDArray<double, 2>::Empty({numPoints, 2});
+
+            for (size_type i = 0; i < numPoints; ++i)
+            {
+                points(i, 0) = dist(rng);
+                points(i, 1) = dist(rng);
+            }
+
+            testConvexHullInvariants(points);
+        }
+    }
+
+    void testMinAreaRectangle()
+    {
+        std::cout << "Running tests for minAreaRectangle..." << std::endl;
+
+        // Generate random points and test minAreaRectangle invariants
+        std::mt19937 rng(123); // Fixed seed for reproducibility
+        std::uniform_real_distribution<double> dist(-1000.0, 1000.0);
+
+        for (int iter = 0; iter < 1000; ++iter)
+        {
+            const size_type numPoints = rng() % 1000 + 1;
+            auto points = NDArray<double, 2>::Empty({numPoints, 2});
+
+            for (size_type i = 0; i < numPoints; ++i)
+            {
+                points(i, 0) = dist(rng);
+                points(i, 1) = dist(rng);
+            }
+
+            testMinAreaRectangleInvariants(points);
         }
     }
 
