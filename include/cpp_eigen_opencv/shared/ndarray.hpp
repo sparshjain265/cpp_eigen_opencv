@@ -14,6 +14,7 @@
 #include <cassert>
 #include <concepts>
 #include <numeric>
+#include <cmath>
 
 namespace ND
 {
@@ -42,6 +43,7 @@ namespace ND
     using Stride = std::array<size_type, NDim>;
 
     // N-Dimensional Array Class
+    // Assumes contiguous storage in row-major order
     // Marked as final to prevent inheritance
     // If you want to inherit, make sure you follow the rule of 5
     // and ensure proper cleanup of resources
@@ -49,13 +51,14 @@ namespace ND
     class NDArray final
     {
     public:
+        using value_type = T;
         using size_type = ND::size_type;
         using shape_size_type = Shape<NDim>::size_type;
         using stride_size_type = Stride<NDim>::size_type;
 
     protected:
         std::shared_ptr<T[]> m_owned_data{nullptr};
-        T *m_data;
+        T *m_data{nullptr};
 
         Shape<NDim> m_shape{};
         Stride<NDim> m_strides{};
@@ -81,7 +84,8 @@ namespace ND
     public:
         // Since we may own resources, we need to follow rule of 5
 
-        // Virtual Destructor to ensure proper cleanup
+        // Destructor to ensure proper cleanup
+        // Non-virtual as class is marked final
         // Nothing extra needed here since we are using std::shared_ptr
         ~NDArray() = default;
 
@@ -111,6 +115,14 @@ namespace ND
                 m_strides[i - 1] = m_size;
                 m_size *= shape[i - 1];
             }
+        }
+
+        // Public Owning Constructor only for 1D Array
+        explicit NDArray(std::initializer_list<T> init)
+            requires(NDim == 1)
+            : NDArray(std::make_shared<T[]>(init.size()), {init.size()})
+        {
+            std::copy(init.begin(), init.end(), m_data);
         }
 
         // Factory Functions to create owning NDArray
@@ -150,6 +162,10 @@ namespace ND
         inline constexpr Shape<NDim> shape() const { return m_shape; }
 
         // Access
+        inline T *data() { return m_data; }
+
+        inline const T *data() const { return m_data; }
+
         template <AllIntegral... Idx>
             requires(sizeof...(Idx) == NDim)
         inline constexpr bool ValidIndex(Idx... idx) const
@@ -228,6 +244,237 @@ namespace ND
             return other.Copy();
         }
     };
+
+    template <typename T, typename U, size_type NDim>
+    auto operator+(const NDArray<T, NDim> &a, const NDArray<U, NDim> &b)
+    {
+        using ResultType = decltype(std::declval<T>() + std::declval<U>());
+
+        assert(a.shape() == b.shape() && "Shape Mismatch");
+
+        auto result = NDArray<ResultType, NDim>::Empty(a.shape());
+
+        for (size_type i{0}; i < a.size(); ++i)
+        {
+            result[i] = a[i] + b[i];
+        }
+
+        return result;
+    }
+
+    template <typename T, typename U, size_type NDim>
+    auto operator-(const NDArray<T, NDim> &a, const NDArray<U, NDim> &b)
+    {
+        using ResultType = decltype(std::declval<T>() - std::declval<U>());
+
+        assert(a.shape() == b.shape() && "Shape Mismatch");
+
+        auto result = NDArray<ResultType, NDim>::Empty(a.shape());
+
+        for (size_type i{0}; i < a.size(); ++i)
+        {
+            result[i] = a[i] - b[i];
+        }
+
+        return result;
+    }
+
+    template <typename T, typename U, size_type NDim>
+    auto operator*(const NDArray<T, NDim> &a, const NDArray<U, NDim> &b)
+    {
+        using ResultType = decltype(std::declval<T>() * std::declval<U>());
+
+        assert(a.shape() == b.shape() && "Shape Mismatch");
+
+        auto result = NDArray<ResultType, NDim>::Empty(a.shape());
+
+        for (size_type i{0}; i < a.size(); ++i)
+        {
+            result[i] = a[i] * b[i];
+        }
+
+        return result;
+    }
+
+    template <typename T, typename U, size_type NDim>
+    auto operator/(const NDArray<T, NDim> &a, const NDArray<U, NDim> &b)
+    {
+        using ResultType = decltype(std::declval<T>() / std::declval<U>());
+
+        assert(a.shape() == b.shape() && "Shape Mismatch");
+
+        auto result = NDArray<ResultType, NDim>::Empty(a.shape());
+
+        for (size_type i{0}; i < a.size(); ++i)
+        {
+            result[i] = a[i] / b[i];
+        }
+
+        return result;
+    }
+
+    template <typename T, typename U, size_type NDim>
+    auto operator+(const NDArray<T, NDim> &a, const U &b)
+    {
+        using ResultType = decltype(std::declval<T>() + std::declval<U>());
+
+        auto result = NDArray<ResultType, NDim>::Empty(a.shape());
+
+        for (size_type i{0}; i < a.size(); ++i)
+        {
+            result[i] = a[i] + b;
+        }
+
+        return result;
+    }
+
+    template <typename T, typename U, size_type NDim>
+    auto operator-(const NDArray<T, NDim> &a, const U &b)
+    {
+        using ResultType = decltype(std::declval<T>() - std::declval<U>());
+
+        auto result = NDArray<ResultType, NDim>::Empty(a.shape());
+
+        for (size_type i{0}; i < a.size(); ++i)
+        {
+            result[i] = a[i] - b;
+        }
+
+        return result;
+    }
+
+    template <typename T, typename U, size_type NDim>
+    auto operator*(const NDArray<T, NDim> &a, const U &b)
+    {
+        using ResultType = decltype(std::declval<T>() * std::declval<U>());
+
+        auto result = NDArray<ResultType, NDim>::Empty(a.shape());
+
+        for (size_type i{0}; i < a.size(); ++i)
+        {
+            result[i] = a[i] * b;
+        }
+
+        return result;
+    }
+
+    template <typename T, typename U, size_type NDim>
+    auto operator/(const NDArray<T, NDim> &a, const U &b)
+    {
+        using ResultType = decltype(std::declval<T>() / std::declval<U>());
+
+        auto result = NDArray<ResultType, NDim>::Empty(a.shape());
+
+        for (size_type i{0}; i < a.size(); ++i)
+        {
+            result[i] = a[i] / b;
+        }
+
+        return result;
+    }
+
+    template <typename T, typename U, size_type NDim>
+    auto operator+(const T &a, const NDArray<U, NDim> &b)
+    {
+        using ResultType = decltype(std::declval<T>() + std::declval<U>());
+
+        auto result = NDArray<ResultType, NDim>::Empty(b.shape());
+        for (size_type i{0}; i < b.size(); ++i)
+        {
+            result[i] = a + b[i];
+        }
+
+        return result;
+    }
+
+    template <typename T, typename U, size_type NDim>
+    auto operator-(const T &a, const NDArray<U, NDim> &b)
+    {
+        using ResultType = decltype(std::declval<T>() - std::declval<U>());
+
+        auto result = NDArray<ResultType, NDim>::Empty(b.shape());
+
+        for (size_type i{0}; i < b.size(); ++i)
+        {
+            result[i] = a - b[i];
+        }
+
+        return result;
+    }
+
+    template <typename T, typename U, size_type NDim>
+    auto operator*(const T &a, const NDArray<U, NDim> &b)
+    {
+        using ResultType = decltype(std::declval<T>() * std::declval<U>());
+
+        auto result = NDArray<ResultType, NDim>::Empty(b.shape());
+        for (size_type i{0}; i < b.size(); ++i)
+        {
+            result[i] = a * b[i];
+        }
+
+        return result;
+    }
+
+    template <typename T, typename U, size_type NDim>
+    auto operator/(const T &a, const NDArray<U, NDim> &b)
+    {
+        using ResultType = decltype(std::declval<T>() / std::declval<U>());
+
+        auto result = NDArray<ResultType, NDim>::Empty(b.shape());
+        for (size_type i{0}; i < b.size(); ++i)
+        {
+            result[i] = a / b[i];
+        }
+
+        return result;
+    }
+
+    /**************************************************************************/
+
+    // Structural Concepts
+    template <typename A>
+    concept NDArrayLike = requires(A a) {
+        typename A::value_type;
+        { a.ndim() } -> std::convertible_to<size_type>;
+        { a.size() } -> std::convertible_to<size_type>;
+        { a.shape() };
+        { a[0] } -> std::convertible_to<typename A::value_type>;
+    };
+
+    template <typename A>
+    concept VectorLike = NDArrayLike<A> && requires(A a) {
+        requires a.ndim() == 1;
+    };
+
+    template <typename A>
+    concept MatrixLike = NDArrayLike<A> && requires(A a) {
+        requires a.ndim() == 2;
+    };
+
+    template <VectorLike A, VectorLike B>
+    auto dot(const A &a, const B &b)
+    {
+        using T = typename A::value_type;
+        using U = typename B::value_type;
+        using ResultType = decltype(std::declval<T>() * std::declval<U>());
+
+        assert(a.shape()[0] == b.shape()[0] && "Shape Mismatch");
+
+        ResultType result{0};
+        for (size_type i{0}; i < a.shape()[0]; ++i)
+        {
+            result += a[i] * b[i];
+        }
+
+        return result;
+    }
+
+    template <VectorLike A>
+    auto norm(const A &a)
+    {
+        return std::sqrt(dot(a, a));
+    }
 
     /**************************************************************************/
 
